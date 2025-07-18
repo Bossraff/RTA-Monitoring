@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PER LOB Dashboard</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      background: #f0f2f5;
+    }
+    h1 {
+      color: #333;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background: #007bff;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    .zero { background-color: #d4edda; }
+    .high { background-color: #f8d7da; }
+    .medium { background-color: #fff3cd; }
+
+    .section-title {
+      margin-top: 50px;
+      font-size: 1.5rem;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+<h1>📊 PER LOB CRM Dashboard</h1>
+
+<!-- LOB Table -->
+<table id="lob-table">
+  <thead>
+    <tr>
+      <th>LOB</th>
+      <th>Badcase Amount</th>
+      <th>Appealed by TL</th>
+      <th>Not Appealed</th>
+      <th>Not Yet Inspected</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<!-- Deadline Table Title -->
+<h2 class="section-title">📅 5-Day Deadline Data</h2>
+
+<!-- Deadline Table -->
+<table id="deadline-table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Date of Expiry</th>
+      <th>Days Before Expiry</th>
+      <th>How Many Cases</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQv6_ed1qK7BXjOuZbRHeUAlcdgpuSZapu2y3BmnnWvCxQTRfOE1KhRkcuiuTqsfZVNXbj7RrvJQE9l/pub?output=csv";
+
+async function fetchData() {
+  const res = await fetch(SHEET_URL);
+  const text = await res.text();
+  const lines = text.trim().split('\n');
+
+  const lobTableBody = document.querySelector("#lob-table tbody");
+  const deadlineTableBody = document.querySelector("#deadline-table tbody");
+
+  lobTableBody.innerHTML = "";
+  deadlineTableBody.innerHTML = "";
+
+  const lobSectionEnd = lines.findIndex(line => line.includes("5-day Deadline Data"));
+  const lobData = lines.slice(1, lobSectionEnd); // LOB data ends before "5-day Deadline Data"
+  const deadlineData = lines.slice(lobSectionEnd + 2); // Deadline data starts 2 lines below that
+
+  // --- Render LOB Table ---
+  lobData.forEach(row => {
+    const cols = row.split(',');
+    const tr = document.createElement("tr");
+    cols.forEach((col, idx) => {
+      const td = document.createElement("td");
+      td.textContent = col;
+
+      if (idx > 0) {
+        const value = parseInt(col);
+        if (value === 0) td.className = 'zero';
+        else if (value > 100) td.className = 'high';
+        else td.className = 'medium';
+      }
+
+      tr.appendChild(td);
+    });
+    lobTableBody.appendChild(tr);
+  });
+
+  // --- Render Deadline Table ---
+  deadlineData.forEach(row => {
+    const cols = row.split(',');
+    if (cols.length >= 4) {
+      const tr = document.createElement("tr");
+      cols.slice(0, 4).forEach(col => {
+        const td = document.createElement("td");
+        td.textContent = col;
+        tr.appendChild(td);
+      });
+      deadlineTableBody.appendChild(tr);
+    }
+  });
+}
+
+fetchData();
+setInterval(fetchData, 15000); // refresh every 15s
+</script>
+
+</body>
+</html>
